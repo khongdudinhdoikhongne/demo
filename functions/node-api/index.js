@@ -29,84 +29,6 @@ function isMusl() {
 }
 
 switch (platform) {
-  case 'android':
-    switch (arch) {
-      case 'arm64':
-        localFileExisted = existsSync(join(__dirname, 'rust_extract_node_api.android-arm64.node'))
-        try {
-          if (localFileExisted) {
-            nativeBinding = require('./rust_extract_node_api.android-arm64.node')
-          } else {
-            nativeBinding = require('rust_extract_node_api-android-arm64')
-          }
-        } catch (e) {
-          loadError = e
-        }
-        break
-      case 'arm':
-        localFileExisted = existsSync(join(__dirname, 'rust_extract_node_api.android-arm-eabi.node'))
-        try {
-          if (localFileExisted) {
-            nativeBinding = require('./rust_extract_node_api.android-arm-eabi.node')
-          } else {
-            nativeBinding = require('rust_extract_node_api-android-arm-eabi')
-          }
-        } catch (e) {
-          loadError = e
-        }
-        break
-      default:
-        throw new Error(`Unsupported architecture on Android ${arch}`)
-    }
-    break
-  case 'win32':
-    switch (arch) {
-      case 'x64':
-        localFileExisted = existsSync(
-          join(__dirname, 'rust_extract_node_api.win32-x64-msvc.node')
-        )
-        try {
-          if (localFileExisted) {
-            nativeBinding = require('./rust_extract_node_api.win32-x64-msvc.node')
-          } else {
-            nativeBinding = require('rust_extract_node_api-win32-x64-msvc')
-          }
-        } catch (e) {
-          loadError = e
-        }
-        break
-      case 'ia32':
-        localFileExisted = existsSync(
-          join(__dirname, 'rust_extract_node_api.win32-ia32-msvc.node')
-        )
-        try {
-          if (localFileExisted) {
-            nativeBinding = require('./rust_extract_node_api.win32-ia32-msvc.node')
-          } else {
-            nativeBinding = require('rust_extract_node_api-win32-ia32-msvc')
-          }
-        } catch (e) {
-          loadError = e
-        }
-        break
-      case 'arm64':
-        localFileExisted = existsSync(
-          join(__dirname, 'rust_extract_node_api.win32-arm64-msvc.node')
-        )
-        try {
-          if (localFileExisted) {
-            nativeBinding = require('./rust_extract_node_api.win32-arm64-msvc.node')
-          } else {
-            nativeBinding = require('rust_extract_node_api-win32-arm64-msvc')
-          }
-        } catch (e) {
-          loadError = e
-        }
-        break
-      default:
-        throw new Error(`Unsupported architecture on Windows: ${arch}`)
-    }
-    break
   case 'darwin':
     localFileExisted = existsSync(join(__dirname, 'rust_extract_node_api.darwin-universal.node'))
     try {
@@ -130,37 +52,8 @@ switch (platform) {
           loadError = e
         }
         break
-      case 'arm64':
-        localFileExisted = existsSync(
-          join(__dirname, 'rust_extract_node_api.darwin-arm64.node')
-        )
-        try {
-          if (localFileExisted) {
-            nativeBinding = require('./rust_extract_node_api.darwin-arm64.node')
-          } else {
-            nativeBinding = require('rust_extract_node_api-darwin-arm64')
-          }
-        } catch (e) {
-          loadError = e
-        }
-        break
       default:
         throw new Error(`Unsupported architecture on macOS: ${arch}`)
-    }
-    break
-  case 'freebsd':
-    if (arch !== 'x64') {
-      throw new Error(`Unsupported architecture on FreeBSD: ${arch}`)
-    }
-    localFileExisted = existsSync(join(__dirname, 'rust_extract_node_api.freebsd-x64.node'))
-    try {
-      if (localFileExisted) {
-        nativeBinding = require('./rust_extract_node_api.freebsd-x64.node')
-      } else {
-        nativeBinding = require('rust_extract_node_api-freebsd-x64')
-      }
-    } catch (e) {
-      loadError = e
     }
     break
   case 'linux':
