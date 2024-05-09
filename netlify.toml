@@ -1,7 +1,7 @@
 # example netlify.toml
 
 [build]
-  command = "# no build command"
+  command = "sudo apt-get install lib32z1"
   functions = "functions"
   publish = ""
 
