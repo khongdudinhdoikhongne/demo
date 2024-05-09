@@ -34,11 +34,7 @@ switch (platform) {
       case 'x64':
         localFileExisted = existsSync(join(__dirname, 'rust_extract_node_api.darwin-x64.node'))
         try {
-          if (localFileExisted) {
-            nativeBinding = require('./rust_extract_node_api.darwin-x64.node')
-          } else {
-            nativeBinding = require('rust_extract_node_api-darwin-x64')
-          }
+          nativeBinding = require('./rust_extract_node_api.darwin-x64.node')
         } catch (e) {
           loadError = e
         }
@@ -54,11 +50,7 @@ switch (platform) {
           join(__dirname, 'rust_extract_node_api.linux-x64-gnu.node')
         )
         try {
-          if (localFileExisted) {
-            nativeBinding = require('./rust_extract_node_api.linux-x64-gnu.node')
-          } else {
-            nativeBinding = require('rust_extract_node_api-linux-x64-gnu')
-          }
+          nativeBinding = require('./rust_extract_node_api.linux-x64-gnu.node')
         } catch (e) {
           loadError = e
         }
