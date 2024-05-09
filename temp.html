@@ -1,0 +1,335 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Quote Generator</title>
+    <style>
+      .upload-form {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 2rem;
+        background-color: #fff;
+        border-radius: 5px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .label {
+        font-size: 1rem;
+        color: #333;
+        margin-bottom: 0.5rem;
+      }
+      .select {
+        width: 100%;
+        padding: 0.8rem;
+        font-size: 1rem;
+        border: 1px solid #ced4da;
+        border-radius: 5px;
+        margin-bottom: 1.5rem;
+        background-color: #fff;
+        color: #495057;
+      }
+      .custom-file-label {
+        padding: 1.5rem;
+        cursor: pointer;
+        border: 2px dashed #ced4da;
+        border-radius: 5px;
+        text-align: center;
+        margin-bottom: 1rem;
+        transition: border-color 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 120px;
+        width: 100%;
+        position: relative;
+        overflow: hidden;
+        background-color: #fff;
+      }
+      .custom-file-label:hover {
+        border-color: #7f56d9;
+      }
+      .price-element {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #333;
+        text-align: center;
+        margin-top: 1.5rem;
+        margin-bottom: 1rem;
+      }
+      .pay-button {
+        display: block;
+        width: 100%;
+        padding: 1rem;
+        font-size: 1rem;
+        color: #fff;
+        background-color: #7f56d9;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        text-align: center;
+        margin-top: 1.5rem;
+      }
+      .pay-button:hover {
+        background-color: #6941c6;
+      }
+    </style>
+  </head>
+  <body>
+      <h2>Quote Generator</h2>
+        <label for="turnaroundTime">Delivery Time:</label>
+        <select id="turnaroundTime" name="turnaroundTime" required>
+          <option value="24 hours">24 hours</option>
+          <option value="48 hours">48 hours</option>
+          <!-- Add more options if needed -->
+        </select>
+        <label for="quality">Quality:</label>
+        <select id="quality" name="quality" required>
+          <option value="Generic">Generic</option>
+          <option value="Business specific">Business specific</option>
+        </select>
+
+        <div class="file-upload-container">
+          <div class="custom-file">
+            <input
+              type="file"
+              class="custom-file-input"
+              id="fileInput"
+              name="file"
+              accept=".doc,.docx,.pdf,.xls,.xlsx,.ppt,.pptx,.txt"
+              required
+            />
+            <label class="custom-file-label" for="fileInput">
+              <span id="fileLabel">Choose file or drag and drop</span>
+            </label>
+          </div>
+        </div>
+
+        <div id="contextFileContainer" style="display: none">
+          <label for="context" class="context-label">Context</label>
+          <div class="file-upload-container">
+            <div class="custom-file">
+              <input
+                type="file"
+                class="custom-file-input"
+                id="contextFileInput"
+                name="contextFile"
+                accept=".doc,.docx,.pdf,.xls,.xlsx,.ppt,.pptx,.txt"
+              />
+              <label class="custom-file-label" for="contextFileInput">
+                <span id="contextFileLabel"
+                  >Choose context file or drag and drop</span
+                >
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <label id="priceElement" class="price-element">Price: $0.00</label>
+        <button
+          id="payButton"
+          class="pay-button"
+          onclick="generateStripePaymentLink()"
+        >
+          Pay with Stripe
+        </button>
+
+    <script>
+      const fileInput = document.getElementById("fileInput");
+      const fileLabel = document.getElementById("fileLabel");
+      const contextFileInput = document.getElementById("contextFileInput");
+      const contextFileLabel = document.getElementById("contextFileLabel");
+      const qualitySelect = document.getElementById("quality");
+      const contextFileContainer = document.getElementById(
+        "contextFileContainer",
+      );
+      const turnaroundTimeSelect = document.getElementById("turnaroundTime");
+
+      // Update label text when file is selected
+      fileInput.addEventListener("change", function (e) {
+        if (fileInput.files.length === 0) {
+          // No file selected, reset file label and price
+          fileLabel.textContent = "Choose file or drag and drop";
+          calculatePrice();
+        } else {
+          const fileName = e.target.files[0].name;
+          const allowedExtensions = [
+            ".doc",
+            ".docx",
+            ".pdf",
+            ".xls",
+            ".xlsx",
+            ".ppt",
+            ".pptx",
+            ".txt",
+          ];
+          const fileExtension = fileName
+            .slice(fileName.lastIndexOf("."))
+            .toLowerCase();
+
+          if (allowedExtensions.includes(fileExtension)) {
+            fileLabel.textContent = fileName;
+            calculatePrice(); // Trigger price calculation when the main file is selected
+          } else {
+            fileInput.value = ""; // Clear the file input
+            fileLabel.textContent = "Choose file or drag and drop";
+            alert("Only Word, PDF, Excel, PPT, and text files are allowed.");
+          }
+        }
+      });
+
+      // Update label text when context file is selected
+      contextFileInput.addEventListener("change", function (e) {
+        if (contextFileInput.files.length === 0) {
+          // No file selected, reset file label
+          contextFileLabel.textContent = "Choose context file or drag and drop";
+        } else {
+          const fileName = e.target.files[0].name;
+          const allowedExtensions = [
+            ".doc",
+            ".docx",
+            ".pdf",
+            ".xls",
+            ".xlsx",
+            ".ppt",
+            ".pptx",
+            ".txt",
+          ];
+          const fileExtension = fileName
+            .slice(fileName.lastIndexOf("."))
+            .toLowerCase();
+
+          if (allowedExtensions.includes(fileExtension)) {
+            contextFileLabel.textContent = fileName;
+          } else {
+            contextFileInput.value = ""; // Clear the context file input
+            contextFileLabel.textContent =
+              "Choose context file or drag and drop";
+            alert("Only Word, PDF, Excel, PPT, and text files are allowed.");
+          }
+        }
+      });
+
+      // Prevent default drag behaviors
+      ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
+        document.addEventListener(eventName, preventDefaults, false);
+      });
+
+      // Handle dropped files
+      document.addEventListener("drop", handleDrop, false);
+
+      function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+
+        if (files.length === 1) {
+          fileInput.files = files;
+          fileInput.dispatchEvent(new Event("change"));
+        } else if (files.length === 2) {
+          fileInput.files = [files[0]];
+          fileInput.dispatchEvent(new Event("change"));
+
+          contextFileInput.files = [files[1]];
+          contextFileInput.dispatchEvent(new Event("change"));
+        }
+      }
+
+      // Show/hide context file input based on quality selection
+      qualitySelect.addEventListener("change", function () {
+        if (qualitySelect.value === "Business specific") {
+          contextFileContainer.style.display = "block";
+        } else {
+          contextFileContainer.style.display = "none";
+          contextFileInput.value = ""; // Clear the context file input
+          contextFileLabel.textContent = "Choose context file or drag and drop";
+        }
+        calculatePrice(); // Trigger price calculation when quality is changed
+      });
+
+      // Component 3: Calculate price
+      function calculatePrice() {
+        const form = document.getElementById("uploadForm");
+        const formData = new FormData(form);
+        const priceElement = document.getElementById("priceElement");
+        const turnaroundTimeSelect = document.getElementById("turnaroundTime");
+
+        if (fileInput.files.length === 0) {
+          // No file selected, reset price display
+          priceElement.textContent = "Price: $0.00";
+          return;
+        }
+
+        priceElement.textContent = "Calculating..."; // Show "Calculating..." message
+
+        fetch(
+          "https://lucky-liger-cadc9d.netlify.app/.netlify/functions/upload",
+          {
+            method: "POST",
+            body: formData,
+          },
+        )
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`HTTP Error: ${response.status}`);
+            }
+            return response.json();
+          })
+          .then((data) => {
+            if (data.error) {
+              console.error("Backend Error:", data.error);
+              priceElement.textContent =
+                "Error calculating price. Please try again.";
+            } else {
+              priceElement.textContent = `Price: $${data.price.toFixed(2)}`; // Display the price
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            priceElement.textContent = `An error occurred: ${error.message}. Please try again.`;
+          });
+      }
+
+      // Trigger price calculation when the turnaround time is changed
+      turnaroundTimeSelect.addEventListener("change", function () {
+        calculatePrice();
+      });
+
+      // Component 2: Generate Stripe payment link
+      function generateStripePaymentLink() {
+        const form = document.getElementById("uploadForm");
+        const formData = new FormData(form);
+
+        fetch(
+          "https://lucky-liger-cadc9d.netlify.app/.netlify/functions/create-stripe-payment",
+          {
+            method: "POST",
+            body: formData,
+          },
+        )
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.error) {
+              console.error(
+                "Error generating Stripe payment link:",
+                data.error,
+              );
+              alert(
+                "An error occurred while generating the payment link. Please try again.",
+              );
+            } else {
+              window.location.href = data.paymentLink;
+            }
+          })
+          .catch((error) => {
+            console.error("Error generating Stripe payment link:", error);
+            alert(
+              "An error occurred while generating the payment link. Please try again.",
+            );
+          });
+      }
+    </script>
+  </body>
+</html>

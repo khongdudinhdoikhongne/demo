@@ -1,0 +1,5 @@
+# Local Netlify folder
+.netlify
+.DS_Stores
+.env
+.my-project-1708232080901-2a096fd32c53.json
