@@ -30,15 +30,6 @@ function isMusl() {
 
 switch (platform) {
   case 'darwin':
-    localFileExisted = existsSync(join(__dirname, 'rust_extract_node_api.darwin-universal.node'))
-    try {
-      if (localFileExisted) {
-        nativeBinding = require('./rust_extract_node_api.darwin-universal.node')
-      } else {
-        nativeBinding = require('rust_extract_node_api-darwin-universal')
-      }
-      break
-    } catch {}
     switch (arch) {
       case 'x64':
         localFileExisted = existsSync(join(__dirname, 'rust_extract_node_api.darwin-x64.node'))
@@ -59,130 +50,14 @@ switch (platform) {
   case 'linux':
     switch (arch) {
       case 'x64':
-        if (isMusl()) {
-          localFileExisted = existsSync(
-            join(__dirname, 'rust_extract_node_api.linux-x64-musl.node')
-          )
-          try {
-            if (localFileExisted) {
-              nativeBinding = require('./rust_extract_node_api.linux-x64-musl.node')
-            } else {
-              nativeBinding = require('rust_extract_node_api-linux-x64-musl')
-            }
-          } catch (e) {
-            loadError = e
-          }
-        } else {
-          localFileExisted = existsSync(
-            join(__dirname, 'rust_extract_node_api.linux-x64-gnu.node')
-          )
-          try {
-            if (localFileExisted) {
-              nativeBinding = require('./rust_extract_node_api.linux-x64-gnu.node')
-            } else {
-              nativeBinding = require('rust_extract_node_api-linux-x64-gnu')
-            }
-          } catch (e) {
-            loadError = e
-          }
-        }
-        break
-      case 'arm64':
-        if (isMusl()) {
-          localFileExisted = existsSync(
-            join(__dirname, 'rust_extract_node_api.linux-arm64-musl.node')
-          )
-          try {
-            if (localFileExisted) {
-              nativeBinding = require('./rust_extract_node_api.linux-arm64-musl.node')
-            } else {
-              nativeBinding = require('rust_extract_node_api-linux-arm64-musl')
-            }
-          } catch (e) {
-            loadError = e
-          }
-        } else {
-          localFileExisted = existsSync(
-            join(__dirname, 'rust_extract_node_api.linux-arm64-gnu.node')
-          )
-          try {
-            if (localFileExisted) {
-              nativeBinding = require('./rust_extract_node_api.linux-arm64-gnu.node')
-            } else {
-              nativeBinding = require('rust_extract_node_api-linux-arm64-gnu')
-            }
-          } catch (e) {
-            loadError = e
-          }
-        }
-        break
-      case 'arm':
-        if (isMusl()) {
-          localFileExisted = existsSync(
-            join(__dirname, 'rust_extract_node_api.linux-arm-musleabihf.node')
-          )
-          try {
-            if (localFileExisted) {
-              nativeBinding = require('./rust_extract_node_api.linux-arm-musleabihf.node')
-            } else {
-              nativeBinding = require('rust_extract_node_api-linux-arm-musleabihf')
-            }
-          } catch (e) {
-            loadError = e
-          }
-        } else {
-          localFileExisted = existsSync(
-            join(__dirname, 'rust_extract_node_api.linux-arm-gnueabihf.node')
-          )
-          try {
-            if (localFileExisted) {
-              nativeBinding = require('./rust_extract_node_api.linux-arm-gnueabihf.node')
-            } else {
-              nativeBinding = require('rust_extract_node_api-linux-arm-gnueabihf')
-            }
-          } catch (e) {
-            loadError = e
-          }
-        }
-        break
-      case 'riscv64':
-        if (isMusl()) {
-          localFileExisted = existsSync(
-            join(__dirname, 'rust_extract_node_api.linux-riscv64-musl.node')
-          )
-          try {
-            if (localFileExisted) {
-              nativeBinding = require('./rust_extract_node_api.linux-riscv64-musl.node')
-            } else {
-              nativeBinding = require('rust_extract_node_api-linux-riscv64-musl')
-            }
-          } catch (e) {
-            loadError = e
-          }
-        } else {
-          localFileExisted = existsSync(
-            join(__dirname, 'rust_extract_node_api.linux-riscv64-gnu.node')
-          )
-          try {
-            if (localFileExisted) {
-              nativeBinding = require('./rust_extract_node_api.linux-riscv64-gnu.node')
-            } else {
-              nativeBinding = require('rust_extract_node_api-linux-riscv64-gnu')
-            }
-          } catch (e) {
-            loadError = e
-          }
-        }
-        break
-      case 's390x':
         localFileExisted = existsSync(
-          join(__dirname, 'rust_extract_node_api.linux-s390x-gnu.node')
+          join(__dirname, 'rust_extract_node_api.linux-x64-gnu.node')
         )
         try {
           if (localFileExisted) {
-            nativeBinding = require('./rust_extract_node_api.linux-s390x-gnu.node')
+            nativeBinding = require('./rust_extract_node_api.linux-x64-gnu.node')
           } else {
-            nativeBinding = require('rust_extract_node_api-linux-s390x-gnu')
+            nativeBinding = require('rust_extract_node_api-linux-x64-gnu')
           }
         } catch (e) {
           loadError = e
