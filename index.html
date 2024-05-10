@@ -55,6 +55,17 @@
                 opacity: 0;
                 cursor: pointer;
             }
+            .indicator {
+                content: "";
+                position: absolute;
+                width: 0%;
+                top: 0;
+                left: 0;
+                bottom: 0;
+                background: #f3e8ff;
+                opacity: .5;
+                z-index: 2;
+            }
 
             .file-upload-container {
                 margin-bottom: 1rem;
@@ -158,6 +169,7 @@
                 <div class="custom-file">
                     <input type="file" class="custom-file-input" id="fileInput" name="file" accept=".doc,.docx,.pdf,.xls,.xlsx,.ppt,.pptx,.txt" required />
                     <label class="custom-file-label" for="fileInput">
+                        <div class="indicator"></div>
                         <span id="fileLabel">Choose file or drag and drop</span>
                     </label>
                 </div>
@@ -169,6 +181,7 @@
                     <div class="custom-file">
                         <input type="file" class="custom-file-input" id="contextFileInput" name="contextFile" accept=".doc,.docx,.pdf,.xls,.xlsx,.ppt,.pptx,.txt" />
                         <label class="custom-file-label" for="contextFileInput">
+                            <div class="indicator"></div>
                             <span id="contextFileLabel">Choose context file or drag and drop</span>
                         </label>
                     </div>
@@ -183,7 +196,7 @@
                 </button>
                 <span class="notification">It may take a few minutes or longer, please do not close the browser</span>
             </div>
-
+            <script src="https://cdn.jsdelivr.net/npm/axios@1.6.8/dist/axios.min.js" integrity="sha256-KdYARiowaU79FbmEi0ykLReM0GcAknXDWjBYASERQwQ=" crossorigin="anonymous"></script>
             <script src="https://www.google.com/recaptcha/api.js"></script>
             <script>
                 const fileInput = document.getElementById("fileInput");
@@ -326,6 +339,7 @@
                 // Component 2: Generate Stripe payment link
                 function generateStripePaymentLink(e) {
                   e.preventDefault();
+                  const indicatorEls = Array.from(document.querySelectorAll('.indicator'))
 
                   grecaptcha.ready(function() {
                     grecaptcha.execute('6Le2l9UpAAAAAAqPCVBq6hdumV0KR79KO0UPyQLR', { action: 'submit' }).then(function(token) {
@@ -340,35 +354,50 @@
                         const payButtonLoading = document.getElementById("payButtonLoading")
                         payButtonLoading && (payButtonLoading.style.display = 'block')
 
-                        fetch("/.netlify/functions/create-stripe-payment", {
-                            method: "POST",
-                            body: formData,
+                        axios.post("/.netlify/functions/create-stripe-payment", formData, {
+                            // Update uploaded progress
+                            onUploadProgress: function(progressEvent) {
+                                const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                                indicatorEls?.forEach(indicatorEl => {
+                                    indicatorEl.style.width = `${percentCompleted}%`
+                                })
+                            }
                         })
-                            .then((response) => response.json())
-                            .then((data) => {
-                                if (data.error) {
-                                    console.error("Error generating Stripe payment link:", data.error);
-                                    if (data.error === 'reCAPTCHA verification failed') {
+                        .then((response) => {
+                            return response.data;
+                        })
+                        .then((data) => {
+                            if (data.error) {
+                                console.error("Error generating Stripe payment link:", data.error);
+                                if (data.error === 'reCAPTCHA verification failed') {
                                     alert('reCAPTCHA verification failed. Please try again.');
-                                    } else {
-                                    alert('An error occurred while generating the payment link. Please try again.');
-                                    }
                                 } else {
-                                    window.location.href = data.paymentLink;
+                                    alert('An error occurred while generating the payment link. Please try again.');
                                 }
+                                // Reset upload indicator
+                                indicatorEls?.forEach(indicatorEl => {
+                                    indicatorEl.style.width = `0%`
+                                })
+                            } else {
+                                window.location.href = data.paymentLink;
+                            }
+                        })
+                        .catch((error) => {
+                            console.error("Error generating Stripe payment link:", error);
+                            alert('An error occurred while generating the payment link. Please try again.');
+                        }).finally(() => {
+                            // Restore the button's original state
+                            // Show pay button 
+                            const payButtonEl = document.getElementById("payButton")
+                            payButtonEl && (payButtonEl.style.display = 'block')
+                            // Hiden loading button
+                            const payButtonLoading = document.getElementById("payButtonLoading")
+                            payButtonLoading && (payButtonLoading.style.display = 'none')
+                            // Reset upload indicator
+                            indicatorEls?.forEach(indicatorEl => {
+                                indicatorEl.style.width = `0%`
                             })
-                            .catch((error) => {
-                                console.error("Error generating Stripe payment link:", error);
-                                alert('An error occurred while generating the payment link. Please try again.');
-                            }).finally(() => {
-                                // Restore the button's original state
-                                // Show pay button 
-                                const payButtonEl = document.getElementById("payButton")
-                                payButtonEl && (payButtonEl.style.display = 'block')
-                                // Hiden loading button
-                                const payButtonLoading = document.getElementById("payButtonLoading")
-                                payButtonLoading && (payButtonLoading.style.display = 'none')
-                            });
+                        });
                     });
                   });
                 }
