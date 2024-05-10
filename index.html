@@ -193,6 +193,7 @@
                 const qualitySelect = document.getElementById("quality");
                 const contextFileContainer = document.getElementById("contextFileContainer");
                 const turnaroundTimeSelect = document.getElementById("turnaroundTime");
+                const allowedExtensions = { docx: 1, pdf: 1, xlsx: 1, pptx: 1, txt: 1 };
 
                 // Update label text when file is selected
                 fileInput.addEventListener("change", function (e) {
@@ -202,10 +203,9 @@
                         calculatePrice();
                     } else {
                         const fileName = e.target.files[0].name;
-                        const allowedExtensions = [".doc", ".docx", ".pdf", ".xls", ".xlsx", ".ppt", ".pptx", ".txt"];
-                        const fileExtension = fileName.slice(fileName.lastIndexOf(".")).toLowerCase();
+                        const fileExtension = fileName.split(".").pop()?.toLocaleLowerCase();
 
-                        if (allowedExtensions.includes(fileExtension)) {
+                        if (allowedExtensions[fileExtension]) {
                             fileLabel.textContent = fileName;
                             calculatePrice(); // Trigger price calculation when the main file is selected
                         } else {
@@ -223,10 +223,9 @@
                         contextFileLabel.textContent = "Choose context file or drag and drop";
                     } else {
                         const fileName = e.target.files[0].name;
-                        const allowedExtensions = [".doc", ".docx", ".pdf", ".xls", ".xlsx", ".ppt", ".pptx", ".txt"];
-                        const fileExtension = fileName.slice(fileName.lastIndexOf(".")).toLowerCase();
+                        const fileExtension = fileName.split(".").pop()?.toLocaleLowerCase();
 
-                        if (allowedExtensions.includes(fileExtension)) {
+                        if (allowedExtensions[fileExtension]) {
                             contextFileLabel.textContent = fileName;
                         } else {
                             contextFileInput.value = ""; // Clear the context file input
@@ -279,43 +278,45 @@
                 });
 
                 // Component 3: Calculate price
-                function calculatePrice() {
-                    const form = document.getElementById("uploadForm");
-                    const formData = new FormData(form);
-                    const priceElement = document.getElementById("priceElement");
-                    const turnaroundTimeSelect = document.getElementById("turnaroundTime");
+                // function calculatePrice() {
+                //     const form = document.getElementById("uploadForm");
+                //     const formData = new FormData(form);
+                //     const priceElement = document.getElementById("priceElement");
+                //     const turnaroundTimeSelect = document.getElementById("turnaroundTime");
 
-                    if (fileInput.files.length === 0) {
-                        // No file selected, reset price display
-                        priceElement.textContent = "Price: $0.00";
-                        return;
-                    }
+                //     if (fileInput.files.length === 0) {
+                //         // No file selected, reset price display
+                //         priceElement.textContent = "Price: $0.00";
+                //         return;
+                //     }
 
-                    priceElement.textContent = "Calculating..."; // Show "Calculating..." message
+                //     priceElement.textContent = "Calculating..."; // Show "Calculating..." message
 
-                    fetch("/.netlify/functions/upload", {
-                        method: "POST",
-                        body: formData,
-                    })
-                        .then((response) => {
-                            if (!response.ok) {
-                                throw new Error(`HTTP Error: ${response.status}`);
-                            }
-                            return response.json();
-                        })
-                        .then((data) => {
-                            if (data.error) {
-                                console.error("Backend Error:", data.error);
-                                priceElement.textContent = "Error calculating price. Please try again.";
-                            } else {
-                                priceElement.textContent = `Price: $${data.price.toFixed(2)}`; // Display the price
-                            }
-                        })
-                        .catch((error) => {
-                            console.error("Error:", error);
-                            priceElement.textContent = `An error occurred: ${error.message}. Please try again.`;
-                        });
-                }
+
+
+                //     fetch("/.netlify/functions/upload", {
+                //         method: "POST",
+                //         body: formData,
+                //     })
+                //         .then((response) => {
+                //             if (!response.ok) {
+                //                 throw new Error(`HTTP Error: ${response.status}`);
+                //             }
+                //             return response.json();
+                //         })
+                //         .then((data) => {
+                //             if (data.error) {
+                //                 console.error("Backend Error:", data.error);
+                //                 priceElement.textContent = "Error calculating price. Please try again.";
+                //             } else {
+                //                 priceElement.textContent = `Price: $${data.price.toFixed(2)}`; // Display the price
+                //             }
+                //         })
+                //         .catch((error) => {
+                //             console.error("Error:", error);
+                //             priceElement.textContent = `An error occurred: ${error.message}. Please try again.`;
+                //         });
+                // }
 
                 // Trigger price calculation when the turnaround time is changed
                 turnaroundTimeSelect.addEventListener("change", function () {
@@ -376,5 +377,107 @@
                     form.addEventListener("submit", generateStripePaymentLink);
             </script>
         </form>
+        <script type="module">
+            import init, { extract, extract_pdf } from "/static/wasm/textract_wasm.js";
+            // init wasm
+            init().catch(() => {
+                alert("Unable to load required component, please reload the page and try again!")
+            })
+
+            const updatePrice = (priceElement, price) => {
+                priceElement.textContent = `Price: $${price.toFixed(2)}`; // Display the price
+            }
+
+            function calculateBasePricePrice(wordCount, quality) {
+                let basePrice;
+                if (wordCount < 501) {
+                    basePrice = 0.12; // Small requests
+                } else if (wordCount <= 1500) {
+                    basePrice = 0.10; // Medium requests
+                } else {
+                    basePrice = 0.08; // Large requests
+                }
+
+                // Apply quality surcharge if business-specific
+                if (quality === 'Business specific') {
+                    basePrice += 0.02; // Additional $0.02 per word
+                }
+
+                return wordCount * basePrice;
+            }
+
+            function applyTurnaroundTimeSurcharge(basePrice, turnaroundTime, wordCount) {
+                let total = basePrice;
+
+                if (turnaroundTime === '24 hours') {
+                    if (wordCount < 501) {
+                    total += 15; // $15 surcharge for small requests
+                    } else if (wordCount <= 1500) {
+                    total += 15; // $15 surcharge for medium requests
+                    } else {
+                    total += 25; // $25 surcharge for large requests
+                    }
+                }
+
+                return total;
+            }
+
+            export async function calculatePrice() {
+                
+                const formData = new FormData(form);
+                const quality = formData.get('quality')
+                const turnaroundTime = formData.get('turnaroundTime')
+                const priceElement = document.getElementById("priceElement");
+                const turnaroundTimeSelect = document.getElementById("turnaroundTime");
+
+                if (fileInput.files.length === 0) {
+                    // No file selected, reset price display
+                    priceElement.textContent = "Price: $0.00";
+                    return;
+                }
+
+                priceElement.textContent = "Calculating..."; // Show "Calculating..." message
+
+                const file = fileInput.files[0];
+                const reader = new FileReader();
+
+                reader.onload = function (event) {
+                const arrayBuffer = event.target.result;
+                const buffer = new Uint8Array(arrayBuffer);
+                const filename = file.name;
+                const fileExtension = file.name.split(".").pop()?.toLocaleLowerCase();
+
+                if (allowedExtensions[fileExtension]) {
+                    if (fileExtension === 'pdf') {
+                        init().then(() => {
+                            const wordCount = extract_pdf(buffer);
+                            const basePrice = calculateBasePricePrice(wordCount, quality);
+                            const totalPrice = applyTurnaroundTimeSurcharge(basePrice, turnaroundTime, wordCount);
+                            updatePrice(priceElement, totalPrice)
+                        }).catch(() => {
+                            priceElement.textContent = "Error calculating price. Please try again.";
+                        })
+                    } else {
+                        init().then(() => {
+                            const wordCount = extract(buffer, filename);
+                            const basePrice = calculateBasePricePrice(wordCount, quality);
+                            const totalPrice = applyTurnaroundTimeSurcharge(basePrice, turnaroundTime, wordCount);
+                            updatePrice(priceElement, totalPrice)
+                        }).catch(() => {
+                            priceElement.textContent = "Error calculating price. Please try again.";
+                        })
+                    }
+                }
+                };
+
+                reader.onerror = function (event) {
+                    priceElement.textContent = "Error calculating price. Please try again.";
+                };
+
+                reader.readAsArrayBuffer(file);
+            }
+            // Assign the function to the global object window
+            window.calculatePrice = calculatePrice;
+        </script>
     </body>
 </html>
